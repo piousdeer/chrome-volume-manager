@@ -1,0 +1,6 @@
+{
+  "extends": "tslint-config-standeerd",
+  "rules": {
+    "no-reference": false
+  }
+}
