@@ -10,7 +10,8 @@ chrome.runtime.onMessage.addListener(async (message: Message, sender, respond) =
       respond(await getTabVolume(message.tabId))
       break
     case 'set-tab-volume':
-      respond(await setTabVolume(message.tabId, message.value))
+      respond(undefined) // Nothing to send here.
+      await setTabVolume(message.tabId, message.value)
       break
     default:
       throw Error(`Unknown message received: ${message}`)
@@ -29,14 +30,17 @@ interface CapturedTab {
   gainNode: GainNode
 }
 
-const capturedTabs: { [tabId: number]: CapturedTab } = {}
+// We use promises to fight race conditions.
+const tabs: { [tabId: number]: Promise<CapturedTab> } = {}
 
-// A map with promises to fight race conditions.
-// TODO: use a single map instead of a map and an object.
-const waitingTabs: Map<number, Promise<void>> = new Map()
-
-async function captureTab (tabId: number) {
-  const promise = new Promise<void>(async resolve => {
+/**
+ * Captures a tab's sound, allowing it to be programmatically modified.
+ * Puts a promise into the `tabs` object. We only need to call this function
+ * if the tab isn't yet in that object.
+ * @param tabId Tab ID
+ */
+function captureTab (tabId: number) {
+  tabs[tabId] = new Promise(async resolve => {
     const stream = await chrome.tabCapture.capture({ audio: true, video: false })
 
     const audioContext = new AudioContext()
@@ -46,44 +50,52 @@ async function captureTab (tabId: number) {
     streamSource.connect(gainNode)
     gainNode.connect(audioContext.destination)
 
-    capturedTabs[tabId] = { audioContext, streamSource, gainNode }
-
-    waitingTabs.delete(tabId)
-    resolve()
+    resolve({ audioContext, streamSource, gainNode })
   })
-
-  waitingTabs.set(tabId, promise)
-  return promise
 }
 
-async function isCaptured (tabId: number) {
-  await waitingTabs.get(tabId)
-  return tabId in capturedTabs
-}
-
+/**
+ * Returns a tab's volume, `1` if the tab isn't captured yet.
+ * @param tabId Tab ID
+ */
 async function getTabVolume (tabId: number) {
-  return await isCaptured(tabId) ? capturedTabs[tabId].gainNode.gain.value : 1
+  return tabId in tabs ? (await tabs[tabId]).gainNode.gain.value : 1
 }
 
+/**
+ * Sets a tab's volume. Captures the tab if it wasn't captured.
+ * @param tabId Tab ID
+ * @param value Volume. `1` means 100%, `0.5` is 50%, etc
+ */
 async function setTabVolume (tabId: number, value: number) {
-  if (!await isCaptured(tabId)) {
-    await captureTab(tabId)
+  if (!(tabId in tabs)) {
+    captureTab(tabId)
   }
 
-  capturedTabs[tabId].gainNode.gain.value = value
+  (await tabs[tabId]).gainNode.gain.value = value
   updateBadge(tabId, value)
 }
 
+/**
+ * Updates the badge which represents current volume.
+ * @param tabId Tab ID
+ * @param value Volume. `1` will display 100, `0.5` - 50, etc
+ */
 async function updateBadge (tabId: number, value: number) {
-  if (await isCaptured(tabId)) {
+  if (tabId in tabs) {
     const text = String(Math.round(value * 100)) // I love rounding errors!
     chrome.browserAction.setBadgeText({ text, tabId })
   }
 }
 
+/**
+ * Removes the tab from `tabs` object and closes its AudioContext.
+ * This function gets called when a tab is closed.
+ * @param tabId Tab ID
+ */
 async function disposeTab (tabId: number) {
-  if (await isCaptured(tabId)) {
-    await capturedTabs[tabId].audioContext.close()
-    delete capturedTabs[tabId]
+  if (tabId in tabs) {
+    (await tabs[tabId]).audioContext.close()
+    delete tabs[tabId]
   }
 }
