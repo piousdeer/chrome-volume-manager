@@ -4,13 +4,13 @@ import 'chrome-extension-async'
 import Message from './interfaces/Message'
 
 // Handle messages from popup
-chrome.runtime.onMessage.addListener((message: Message, sender, respond) => {
+chrome.runtime.onMessage.addListener(async (message: Message, sender, respond) => {
   switch (message.name) {
     case 'get-tab-volume':
-      respond(getTabVolume(message.tabId))
+      respond(await getTabVolume(message.tabId))
       break
     case 'set-tab-volume':
-      respond(setTabVolume(message.tabId, message.value))
+      respond(await setTabVolume(message.tabId, message.value))
       break
     default:
       throw Error(`Unknown message received: ${message}`)
