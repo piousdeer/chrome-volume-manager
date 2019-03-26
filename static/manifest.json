@@ -8,16 +8,13 @@
     "tabCapture"
   ],
   "browser_action": {
-    "default_icon": "icons/512.png",
+    "default_icon": "icon.png",
     "default_popup": "popup.html"
   },
   "background": {
     "scripts": ["background.js"]
   },
   "icons": {
-    "128": "icons/128.png",
-    "48": "icons/48.png",
-    "32": "icons/32.png",
-    "16": "icons/16.png"
+    "512": "icon.png"
   }
 }
