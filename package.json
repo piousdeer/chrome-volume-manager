@@ -1,6 +1,6 @@
 {
   "name": "chrome-volume-manager",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Chrome extension to control any tab's volume separately",
   "files": [
     "dist",
