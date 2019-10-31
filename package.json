@@ -24,15 +24,15 @@
     "@types/material-components-web": "^0.43.1",
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
-    "parcel-bundler": "^1.12.3",
-    "parcel-plugin-static-files-copy": "^2.0.0",
-    "sass": "^1.17.0",
-    "tslint": "^5.12.1",
+    "parcel-bundler": "^1.12.4",
+    "parcel-plugin-static-files-copy": "^2.2.1",
+    "sass": "^1.23.2",
+    "tslint": "^5.20.0",
     "tslint-config-standeerd": "^4.0.0",
-    "typescript": "^3.3.3"
+    "typescript": "^3.6.4"
   },
   "dependencies": {
-    "chrome-extension-async": "^3.3.2",
-    "material-components-web": "^0.44.0"
+    "chrome-extension-async": "^3.4.1",
+    "material-components-web": "^3.2.0"
   }
 }
